@@ -6,6 +6,11 @@ import math
 import pyautogui as pag
 from tkinter import *
 from tkinter.ttk import *
+from Quartz.CoreGraphics import CGEventCreateMouseEvent
+from Quartz.CoreGraphics import CGEventPost
+from Quartz.CoreGraphics import kCGEventMouseMoved
+from Quartz.CoreGraphics import kCGMouseButtonLeft
+from Quartz.CoreGraphics import kCGHIDEventTap
 
 
 if __name__ == "__main__":
@@ -13,38 +18,62 @@ if __name__ == "__main__":
     loop = True
     screen_w, screen_l = (root.winfo_screenwidth(), root.winfo_screenheight())
 
+    def mouseEvent(type, posx, posy):
+        theEvent = CGEventCreateMouseEvent(
+            None, type, (posx, posy), kCGMouseButtonLeft)
+        CGEventPost(kCGHIDEventTap, theEvent)
+
+    def mousemove(posx, posy):
+        mouseEvent(kCGEventMouseMoved, posx, posy)
+
+    def _midpoint(p1, p2):
+        midpoint_x = (p1[0] + p2[0]) / 2
+        midpoint_y = (p1[1] + p2[1]) / 2
+        return [midpoint_x, midpoint_y]
+
     def move(ldm):
         try:
-            point1 = ldm[hs.fin_marks["thumb"][0]]
-            point2 = ldm[hs.fin_marks["pointer"][0]]
-            point3 = ldm[hs.fin_marks["middle"][0]]
+            down = False
+            prev_point = [0, 0]
+            while True:
 
-            if point1 == [] or point2 == [] or point3 == []:
-                return False
+                if hs.fist(ldm):
+                    return False
 
-            midpoint_x = (point1[0] + point2[0]) / 2
-            midpoint_y = (point1[1] + point2[1]) / 2
-            scale = 1.75
-            midpoint = ((midpoint_x*scale - (scale/6))*screen_w,
-                        (midpoint_y*scale - (scale/6))*screen_l)
+                point1 = ldm[hs.fin_marks["thumb"][0]]
+                point2 = ldm[hs.fin_marks["pointer"][0]]
+                point3 = ldm[hs.fin_marks["middle"][0]]
 
-            # Lock
-            if point3[1] > point1[1]:
-                pag.moveTo(midpoint)
+                if point1 == [] or point2 == [] or point3 == []:
+                    return False
 
-            # Clicks
-            pointt = ldm[hs.fin_marks["thumb"][1]]
-            if pointt != []:
-                pag.mouseDown() if math.dist(point1, point2) < math.dist(
-                    point1, pointt) else pag.mouseUp()
-            else:
-                pag.mouseUp()
+                midpoint_x, midpoint_y = _midpoint(point1, point2)
+                scale = 1.75
+                midpoint = ((midpoint_x*scale - (scale/6))*screen_w,
+                            (midpoint_y*scale - (scale/6))*screen_l)
 
-            return True
+                # Lock
+                if point3[1] > point1[1]:
+                    drag_mid = _midpoint(midpoint, prev_point)
+                    mousemove(drag_mid[0], drag_mid[1])
+                    prev_point = drag_mid
+
+                # Clicks
+                # Three zones, zone of up, zone of down, and zone of uncertainty
+                pointt = ldm[hs.fin_marks["thumb"][1]]
+                if pointt != []:
+                    new_down = math.dist(point1, point2) < math.dist(
+                        point1, pointt)
+                    if new_down != down:
+                        pag.mouseDown() if new_down else pag.mouseUp()
+                        down = new_down
+                else:
+                    pag.mouseUp()
+
         except:
             return False
-
     # return success
+
     def slide_window(ldm):
         try:
             center = ldm[hs.fin_marks["middle"][-1]]
@@ -100,8 +129,7 @@ if __name__ == "__main__":
                 fingers_up = hs.fingers_pointing_up(ldm)
 
             case "pointer":
-                while move(ldm) and not hs.fist(ldm):
-                    pass
+                success = move(ldm)
                 stage = "roaming"
 
             case "palm":
