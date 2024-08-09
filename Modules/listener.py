@@ -4,6 +4,7 @@ import sys
 import sounddevice as sd
 import json
 from vosk import Model, KaldiRecognizer
+from Modules import update_sys_info as usi, dump
 
 q = queue.Queue()
 
@@ -18,10 +19,12 @@ def callback(indata, frames, time, status):
 device_info = sd.query_devices(kind="input")
 samplerate = int(device_info["default_samplerate"])
 model = Model(lang="en-us")
-dump_fn = open("Modules/dump.txt", "w")
+
+usi.update("can_record", True)
 
 
 def run(conn=None):
+    global dump
     try:
         with sd.RawInputStream(samplerate=samplerate, blocksize=8000,
                                dtype="int16", channels=1, callback=callback):
@@ -30,26 +33,29 @@ def run(conn=None):
             text = ""
             while True:
                 data = q.get()
+
                 if rec.AcceptWaveform(data):
+
                     new_text = json.loads(rec.Result())["text"]
+
+                    if not usi.get("can_record"):
+                        print("can't record")
 
                     if new_text != text:
                         text = new_text
-                        # print(type(text))
+                        dump.add("voice", text)
+
                         if conn:
                             conn.send(text)
 
-                        dump_fn.write("voice: " + text + "\n")
-
-                else:
-                    if "stop" in json.loads(rec.PartialResult())["partial"]:
-                        break
+                elif "stop" in json.loads(rec.PartialResult())["partial"]:
+                    break
     except KeyboardInterrupt:
         print("Done")
-    dump_fn.close()
     if conn:
         conn.send("exit")
         conn.close()
+    dump.write_to_file()
 
 
 if __name__ == "__main__":

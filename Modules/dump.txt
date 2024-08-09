@@ -1,1 +1,4 @@
-voice: computer
+voice: running volume on
+voice: can you increase the volume
+voice: what does off
+voice: a computer
