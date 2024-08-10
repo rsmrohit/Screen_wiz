@@ -13,7 +13,8 @@ def callback(indata, frames, time, status):
     """This is called (from a separate thread) for each audio block."""
     if status:
         print(status, file=sys.stderr)
-    q.put(bytes(indata))
+    if usi.get("can_record"):
+        q.put(bytes(indata))
 
 
 device_info = sd.query_devices(kind="input")
@@ -38,12 +39,9 @@ def run(conn=None):
 
                     new_text = json.loads(rec.Result())["text"]
 
-                    if not usi.get("can_record"):
-                        print("can't record")
-
                     if new_text != text:
                         text = new_text
-                        dump.add("voice", text)
+                        dump.log_event("voice", text)
 
                         if conn:
                             conn.send(text)
@@ -55,7 +53,6 @@ def run(conn=None):
     if conn:
         conn.send("exit")
         conn.close()
-    dump.write_to_file()
 
 
 if __name__ == "__main__":

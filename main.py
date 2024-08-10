@@ -2,10 +2,40 @@ import os
 import sys
 from collections import defaultdict
 from multiprocessing import Process, Pipe
+import multiprocessing as mp
 import importlib
+import time
+from Modules import tts, dump
 
 mods_dict = defaultdict()
 keywords_dict = defaultdict(lambda: [])
+
+
+class ButtonTimer():
+
+    def __init__(self, idle=5, active=False):
+        self.idle = idle
+        self._active = active
+        self.idle_time = idle+time.time()
+
+    def activate(self):
+        self._active = True
+        self.idle_time = time.time() + self.idle
+
+    def reset_timer(self):
+        self.idle_time = time.time() + self.idle
+
+    def deactivate(self):
+        self._active = False
+
+    def is_active(self):
+        if time.time() > self.idle_time:
+            self._active = False
+        return self._active
+
+    def __eq__(self, value: object) -> bool:
+        return self.is_active() == value
+
 
 # Import all modules
 for py in [f[:-3] for f in os.listdir("Modules") if f.endswith('.py') and f != '__init__.py']:
@@ -20,22 +50,51 @@ for mod_name in mods_dict:
         for k in mod.keywords:
             keywords_dict[k] = mod_name
 
+listening = False
 if __name__ == "__main__":
 
+    # Clear log
+    dump.clear_table()
+
     # Start listener process
-    dump = open("Modules/dump.txt", 'r')
     receiver, sender = Pipe()
     listener = Process(
         target=mods_dict["listener"].run, kwargs={'conn': sender})
 
     listener.start()
 
+    # Button timer for listening
+    idle_timer = ButtonTimer(idle=5)
+
     while listener.is_alive():
 
+        # Receive messages from the listener,
         msg = receiver.recv()
+        if msg:
+            idle_timer.reset_timer()
+
         if msg == "exit":
             listener.join()
             listener.terminate()
 
-        if "computer" in msg:
-            print("YAY")
+        listening = idle_timer.is_active()
+        # Once computer is mentioned, begin the listening process
+        if "computer" in msg and not listening:
+            idle_timer.activate()
+            tts.say("What is up")
+
+        elif listening:
+            for m in msg.split():
+                mod = keywords_dict[m]
+                if mod == []:
+                    del keywords_dict[m]
+                    continue
+
+                tts.say("running " + mod + " mod")
+                mod = mods_dict[mod]
+                msg = mod.run()
+                print(msg)
+                break  # For now, will only do one cmd at a time
+
+        # dump.write_to_file()
+    # dump.write_to_file()

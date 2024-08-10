@@ -22,6 +22,7 @@ def run():
         return "error"
 
     current_vol = get_vol()
+    new_vol = current_vol
     if "increase" in msg or "more" in msg:
         tts.say("increasing volume")
         new_vol = min(100, current_vol + 20, current_vol + 10)
@@ -37,5 +38,5 @@ def run():
 
 def get_vol():
     current_vol = osascript.osascript("get volume settings")[1]
-    current_vol = int(re.search('([0-9]+),*', current_vol)[:-1])
+    current_vol = int(re.search('([0-9]+),*', current_vol)[0][:-1])
     return current_vol

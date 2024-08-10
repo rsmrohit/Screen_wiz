@@ -1,7 +1,4 @@
 import sqlite3
-from multiprocessing import Process
-import os
-import signal
 
 conn = sqlite3.connect('Modules/dump.db')
 c = conn.cursor()
