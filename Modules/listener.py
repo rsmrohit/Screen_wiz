@@ -41,7 +41,7 @@ def run(conn=None):
 
                     if new_text != text:
                         text = new_text
-                        dump.log_event("voice", text)
+                        # dump.log_event("listener", text) # TODO: Separate log for listener
 
                         if conn:
                             conn.send(text)

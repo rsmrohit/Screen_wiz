@@ -11,23 +11,19 @@ def run():
 
     # Get the exacty message with
     for log in dump.get_logs(start=0, amt=3):
+        # print(log)
         tag, msg = log[2:]
 
-        if "voice" in tag and "screenshot" in msg:
+        if "voice" in tag:
             break
 
-    configs = ['-c']
+    configs = ['screencapture', defaultsave]
 
-    copy = True
-    if "save" in msg:
-        configs = []
-        copy = False
+    if "save" not in msg:  # I STILL SAVE IT FOR NOW EVEN THOUGH 'SAVE' ISNT THERE
+        configs.insert(1, '-c')
     if "part" in msg or "section" in msg:
-        configs.append('-i')
+        configs.insert(1, '-i')
 
-    configs = " ".join(configs)
-
-    # os.system(f"screencapture {configs} {defaultsave}")
-    # dump.log_event('img', defaultsave if not copy else 'clipboard')
-    os.system(f"screencapture -c -i {defaultsave}")
+    os.system(' '.join(configs))
+    print(' '.join(configs))
     dump.log_event('img', defaultsave)

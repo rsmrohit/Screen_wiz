@@ -14,7 +14,7 @@ def run():
     imgtag, imgmsg = ("", "")
 
     # Get the exacty message with
-    for log in dump.get_logs(start=0, amt=3):
+    for log in dump.get_logs(start=0, amt=5):
 
         if log[2] == "voice" and tag == "":
             tag, msg = log[2:]
@@ -23,6 +23,7 @@ def run():
             imgtag, imgmsg = log[2:]
 
     if not imgmsg.endswith('jpg'):
+        dump.log_event('reader', 'no image given to read')
         tts.say("Please save screenshot before reading")
         return
 

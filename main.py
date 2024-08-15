@@ -91,7 +91,8 @@ if __name__ == "__main__":
 
         elif listening:
 
-            cmds = llm.prompt(simple_split_prompt(msg)).split("/")
+            # cmds = llm.prompt(simple_split_prompt(msg)).split("/")
+            cmds = [msg]
 
             for msg in cmds:
                 for m in msg.split():

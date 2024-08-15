@@ -11,8 +11,7 @@ def run():
 def say(message):
     usi.update("can_record", False)
     # print("TTS TEST", usi.get("can_record"))
-    message = message.lower()
-    os.system("say " + message)
+    os.system(f'echo """{message}""" | say ')
     usi.update("can_record", True)
     # print("TTS TEST", usi.get("can_record"))
 

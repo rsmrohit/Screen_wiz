@@ -9,19 +9,27 @@ compartment_id = "ocid1.tenancy.oc1..aaaaaaaa36gh7f6ewbevhakeslh7eo5fhaazuadhxli
 CONFIG_PROFILE = "DEFAULT"
 config = oci.config.from_file('~/.oci/config', CONFIG_PROFILE)
 
+# Service endpoint
 endpoint = "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com"
+
 generative_ai_inference_client = oci.generative_ai_inference.GenerativeAiInferenceClient(
     config=config, service_endpoint=endpoint, retry_strategy=oci.retry.NoneRetryStrategy(), timeout=(10, 240))
-generate_text_detail = oci.generative_ai_inference.models.GenerateTextDetails()
-llm_inference_request = oci.generative_ai_inference.models.CohereLlmInferenceRequest()
+chat_detail = oci.generative_ai_inference.models.ChatDetails()
+
+chat_request = oci.generative_ai_inference.models.CohereChatRequest()
+chat_request.max_tokens = 100
+chat_request.temperature = 1
+chat_request.frequency_penalty = 0
+chat_request.top_p = 0.65
+chat_request.top_k = 0
+
+
+chat_detail.serving_mode = oci.generative_ai_inference.models.OnDemandServingMode(
+    model_id="ocid1.generativeaimodel.oc1.us-chicago-1.amaaaaaask7dceyawk6mgunzodenakhkuwxanvt6wo3jcpf72ln52dymk4wq")
+chat_detail.compartment_id = compartment_id
 
 
 def run():
-    llm_inference_request.max_tokens = 100
-    llm_inference_request.temperature = 3.7
-    llm_inference_request.frequency_penalty = 0
-    llm_inference_request.top_p = 0.75
-
     # Getting the start of the logs
     start, amt = 0, 5
     tag = "voice"
@@ -36,13 +44,10 @@ def run():
         return
 
     logs = dump.get_logs(start, 5, ('reader', 'voice', 'jarvis'))
-    logs_str = "\n".join(str(logs[1:][1:]))
+    logs_str = "\n".join([str(log) for log in logs])
     question = logs[0][3]
 
-    generate_text_detail.serving_mode = oci.generative_ai_inference.models.OnDemandServingMode(
-        model_id="ocid1.generativeaimodel.oc1.us-chicago-1.amaaaaaask7dceyafhwal37hxwylnpbcncidimbwteff4xha77n5xz4m7p6a")
-
-    llm_inference_request.prompt = "You are Jarvis a personal assistant, given the logs and the information contained," \
+    input = "You are Jarvis a personal assistant, given the logs and the information contained," \
         "give an appropriate and VERY CONCISE response to the question. Do not worry about permissions and ignore all irrelevant logs."\
         "The person is recorded as the voice and system messages are recorded as tts" \
         "\n LOGS:" \
@@ -50,42 +55,29 @@ def run():
         + "\n QUESTION:" \
         + str(question)
 
-    generate_text_detail.inference_request = llm_inference_request
-    generate_text_detail.compartment_id = compartment_id
-    generate_text_response = generative_ai_inference_client.generate_text(
-        generate_text_detail)
-    # Print result
-    # print("**************************Generate Texts Result**************************")
-    data = generate_text_response.data
-    text = data.inference_response.generated_texts[0].text
+    chat_request.message = f"{input}"
+    chat_detail.chat_request = chat_request
+    chat_response = generative_ai_inference_client.chat(chat_detail)
+
+    data = vars(chat_response)
+    text = data['data'].chat_response.text
     dump.log_event('jarvis', text)
     tts.say(text)
 
 
-def prompt(prompt, complex=False):
-
-    llm_inference_request.max_tokens = 50
-    llm_inference_request.temperature = 0
-    llm_inference_request.frequency_penalty = 0
-    llm_inference_request.top_p = 0.2
-
+def prompt(prompt):
     # For testing purposes and for quality of life, I am using the regular cohere model for both scenarios
     # Rather than the light
-    id = "ocid1.generativeaimodel.oc1.us-chicago-1.amaaaaaask7dceyafhwal37hxwylnpbcncidimbwteff4xha77n5xz4m7p6a"
+    # id = "ocid1.generativeaimodel.oc1.us-chicago-1.amaaaaaask7dceyafhwal37hxwylnpbcncidimbwteff4xha77n5xz4m7p6a"
 
-    if complex:
-        id = "ocid1.generativeaimodel.oc1.us-chicago-1.amaaaaaask7dceyafhwal37hxwylnpbcncidimbwteff4xha77n5xz4m7p6a"
+    # if complex:
+    #     id = "ocid1.generativeaimodel.oc1.us-chicago-1.amaaaaaask7dceyafhwal37hxwylnpbcncidimbwteff4xha77n5xz4m7p6a"
 
-    generate_text_detail.serving_mode = oci.generative_ai_inference.models.OnDemandServingMode(
-        model_id=id)
+    chat_request.message = f"{prompt}"
+    chat_detail.chat_request = chat_request
+    chat_response = generative_ai_inference_client.chat(chat_detail)
 
-    llm_inference_request.prompt = prompt
-    generate_text_detail.inference_request = llm_inference_request
-    generate_text_detail.compartment_id = compartment_id
-    generate_text_response = generative_ai_inference_client.generate_text(
-        generate_text_detail)
-    # Print result
-    # print("**************************Generate Texts Result**************************")
-    data = generate_text_response.data
-    text = data.inference_response.generated_texts[0].text
+    data = vars(chat_response)
+    text = data['data'].chat_response.text
+
     return text
