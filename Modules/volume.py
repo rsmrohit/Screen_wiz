@@ -21,19 +21,21 @@ def run():
     if "volume" not in msg or tag != "voice":
         return "error"
 
+    diff = 50 if "lot" in msg else 30
+
     current_vol = get_vol()
     new_vol = current_vol
-    if "increase" in msg or "more" in msg:
+    if "increase" in msg:
         tts.say("increasing volume")
-        new_vol = min(100, current_vol + 20, current_vol + 10)
+        new_vol = min(100, current_vol + diff, current_vol + diff/2)
 
-    elif "decrease" in msg or "less" in msg:
+    elif "decrease" in msg:
         tts.say("decreasing volume")
-        new_vol = max(0, current_vol - 20, current_vol - 10)
+        new_vol = max(0, current_vol - diff, current_vol - diff/2)
 
     osascript.osascript("set volume output volume "+str(new_vol))
 
-    return "exit"
+    return
 
 
 def get_vol():
