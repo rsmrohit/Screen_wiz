@@ -54,10 +54,9 @@ listening = False
 if __name__ == "__main__":
 
     def simple_split_prompt(q):
-        prompt = f"""**Exercise** Split the following sentence into simple sentences (each sentence must be followed by a '/') remember to write END once done
-
-Sentence: {q}
-Answer: """
+        prompt = f"****Exercise****\n If the sentence is complex or compound, split it into simple sentences (each sentence must be followed by a '/') remember to write END once done"\
+            f"\n\nSentence:'''{q}.'''"\
+            f"\nAnswer: "
         return prompt
 
     # Clear log
@@ -92,18 +91,20 @@ Answer: """
 
         elif listening:
 
-            # cmds = llm.prompt(simple_split_prompt(msg)).split("/")
+            cmds = llm.prompt(simple_split_prompt(msg)).split("/")
 
-            for m in msg.split():
-                mod = keywords_dict[m]
-                if mod == []:
-                    del keywords_dict[m]
-                    continue
+            for msg in cmds:
+                for m in msg.split():
+                    mod = keywords_dict[m]
+                    if mod == []:
+                        del keywords_dict[m]
+                        continue
 
-                tts.say("running " + mod + " mod")
-                mod = mods_dict[mod]
-                mod.run()
-                print(msg)
+                    dump.log_event('voice', msg)
+                    tts.say("running " + mod + " mod")
+                    mod = mods_dict[mod]
+                    mod.run()
+                    print(msg)
                 # break  # For now, will only do one cmd at a time
 
         # dump.write_to_file()

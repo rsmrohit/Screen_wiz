@@ -14,13 +14,13 @@ generative_ai_inference_client = oci.generative_ai_inference.GenerativeAiInferen
     config=config, service_endpoint=endpoint, retry_strategy=oci.retry.NoneRetryStrategy(), timeout=(10, 240))
 generate_text_detail = oci.generative_ai_inference.models.GenerateTextDetails()
 llm_inference_request = oci.generative_ai_inference.models.CohereLlmInferenceRequest()
-llm_inference_request.max_tokens = 100
-llm_inference_request.temperature = 3.7
-llm_inference_request.frequency_penalty = 0
-llm_inference_request.top_p = 0.75
 
 
 def run():
+    llm_inference_request.max_tokens = 100
+    llm_inference_request.temperature = 3.7
+    llm_inference_request.frequency_penalty = 0
+    llm_inference_request.top_p = 0.75
 
     # Getting the start of the logs
     start, amt = 0, 5
@@ -63,6 +63,11 @@ def run():
 
 
 def prompt(prompt, complex=False):
+
+    llm_inference_request.max_tokens = 50
+    llm_inference_request.temperature = 0
+    llm_inference_request.frequency_penalty = 0
+    llm_inference_request.top_p = 0.2
 
     # For testing purposes and for quality of life, I am using the regular cohere model for both scenarios
     # Rather than the light
