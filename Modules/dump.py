@@ -21,10 +21,16 @@ def log_event(event, details):
     conn.commit()
 
 
-def get_logs(start=0, amt=1):
-    '''Returns list of logs in descending order (index), start is index (0 most recent), number of logs from startis amt'''
+def get_logs(start=0, amt=1, tags=None):
+    '''Returns list of logs in descending order (index), start is index (0 most recent), number of logs from startis amt'''\
+        ''' Tags must be a tuple'''
+    where_in = 'NOT IN ()'
+    if tags and len(tags) == 1:
+        tags = (tags[0], '_')
+    if tags:
+        where_in = f'IN {tags}'
     res = conn.execute(
-        f"SELECT * FROM logs ORDER BY id DESC LIMIT {amt} OFFSET {start}")
+        f"SELECT * FROM logs WHERE event {where_in} ORDER BY id DESC LIMIT {amt} OFFSET {start}")
     return res.fetchall()
 
 
@@ -42,8 +48,8 @@ if __name__ == "__main__":
     log_event('test_event', "test Commit")
     log_event('test_event2', "test second commit")
     log_event('test_event3', "top level commit")
-    logs = get_logs(start=0, amt=3)
-    print(logs, logs[0][2])
+    logs = get_logs(start=0, amt=3, tags=('test_event',))
+    print(logs)
 
 
 # def update_logs():

@@ -5,7 +5,7 @@ from multiprocessing import Process, Pipe
 import multiprocessing as mp
 import importlib
 import time
-from Modules import tts, dump
+from Modules import tts, dump, llm
 
 mods_dict = defaultdict()
 keywords_dict = defaultdict(lambda: [])
@@ -53,6 +53,13 @@ for mod_name in mods_dict:
 listening = False
 if __name__ == "__main__":
 
+    def simple_split_prompt(q):
+        prompt = f"""**Exercise** Split the following sentence into simple sentences (each sentence must be followed by a '/') remember to write END once done
+
+Sentence: {q}
+Answer: """
+        return prompt
+
     # Clear log
     dump.clear_table()
 
@@ -64,7 +71,7 @@ if __name__ == "__main__":
     listener.start()
 
     # Button timer for listening
-    idle_timer = ButtonTimer(idle=5)
+    idle_timer = ButtonTimer(idle=10)
 
     while listener.is_alive():
 
@@ -84,6 +91,9 @@ if __name__ == "__main__":
             tts.say("What is up")
 
         elif listening:
+
+            # cmds = llm.prompt(simple_split_prompt(msg)).split("/")
+
             for m in msg.split():
                 mod = keywords_dict[m]
                 if mod == []:
@@ -92,9 +102,9 @@ if __name__ == "__main__":
 
                 tts.say("running " + mod + " mod")
                 mod = mods_dict[mod]
-                msg = mod.run()
+                mod.run()
                 print(msg)
-                break  # For now, will only do one cmd at a time
+                # break  # For now, will only do one cmd at a time
 
         # dump.write_to_file()
     # dump.write_to_file()

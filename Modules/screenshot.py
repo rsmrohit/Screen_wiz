@@ -1,7 +1,7 @@
 import os
 from Modules import dump
 
-keywords = ["screenshot", "screen"]
+keywords = ["screenshot", "screen", "picture"]
 
 
 def run():
@@ -27,5 +27,7 @@ def run():
 
     configs = " ".join(configs)
 
-    os.system(f"screencapture {configs} {defaultsave}")
-    dump.log_event('img', defaultsave if not copy else 'clipboard')
+    # os.system(f"screencapture {configs} {defaultsave}")
+    # dump.log_event('img', defaultsave if not copy else 'clipboard')
+    os.system(f"screencapture -c -i {defaultsave}")
+    dump.log_event('img', defaultsave)

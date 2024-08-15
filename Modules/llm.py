@@ -14,12 +14,10 @@ generative_ai_inference_client = oci.generative_ai_inference.GenerativeAiInferen
     config=config, service_endpoint=endpoint, retry_strategy=oci.retry.NoneRetryStrategy(), timeout=(10, 240))
 generate_text_detail = oci.generative_ai_inference.models.GenerateTextDetails()
 llm_inference_request = oci.generative_ai_inference.models.CohereLlmInferenceRequest()
-llm_inference_request.max_tokens = 200
+llm_inference_request.max_tokens = 100
 llm_inference_request.temperature = 3.7
 llm_inference_request.frequency_penalty = 0
 llm_inference_request.top_p = 0.75
-generate_text_detail.serving_mode = oci.generative_ai_inference.models.OnDemandServingMode(
-    model_id="ocid1.generativeaimodel.oc1.us-chicago-1.amaaaaaask7dceyafhwal37hxwylnpbcncidimbwteff4xha77n5xz4m7p6a")
 
 
 def run():
@@ -28,7 +26,7 @@ def run():
     start, amt = 0, 5
     tag = "voice"
 
-    for log in dump.get_logs(0, amt):
+    for log in dump.get_logs(0, amt, ('reader', 'voice', 'jarvis')):
         if log[2] == tag and "jarvis" in str(log[3]).lower():
             break
         start += 1
@@ -37,12 +35,15 @@ def run():
         print("ERROR IN LLM")
         return
 
-    logs = dump.get_logs(start, 5)
+    logs = dump.get_logs(start, 5, ('reader', 'voice', 'jarvis'))
     logs_str = "\n".join(str(logs[1:][1:]))
     question = logs[0][3]
 
+    generate_text_detail.serving_mode = oci.generative_ai_inference.models.OnDemandServingMode(
+        model_id="ocid1.generativeaimodel.oc1.us-chicago-1.amaaaaaask7dceyafhwal37hxwylnpbcncidimbwteff4xha77n5xz4m7p6a")
+
     llm_inference_request.prompt = "You are Jarvis a personal assistant, given the logs and the information contained," \
-        "give an appropriate and concise response to the question. Do not worry about permissions and ignore all irrelevant logs."\
+        "give an appropriate and VERY CONCISE response to the question. Do not worry about permissions and ignore all irrelevant logs."\
         "The person is recorded as the voice and system messages are recorded as tts" \
         "\n LOGS:" \
         + logs_str \
@@ -57,5 +58,29 @@ def run():
     # print("**************************Generate Texts Result**************************")
     data = generate_text_response.data
     text = data.inference_response.generated_texts[0].text
-    dump.log_event('llm', text)
+    dump.log_event('jarvis', text)
     tts.say(text)
+
+
+def prompt(prompt, complex=False):
+
+    # For testing purposes and for quality of life, I am using the regular cohere model for both scenarios
+    # Rather than the light
+    id = "ocid1.generativeaimodel.oc1.us-chicago-1.amaaaaaask7dceyafhwal37hxwylnpbcncidimbwteff4xha77n5xz4m7p6a"
+
+    if complex:
+        id = "ocid1.generativeaimodel.oc1.us-chicago-1.amaaaaaask7dceyafhwal37hxwylnpbcncidimbwteff4xha77n5xz4m7p6a"
+
+    generate_text_detail.serving_mode = oci.generative_ai_inference.models.OnDemandServingMode(
+        model_id=id)
+
+    llm_inference_request.prompt = prompt
+    generate_text_detail.inference_request = llm_inference_request
+    generate_text_detail.compartment_id = compartment_id
+    generate_text_response = generative_ai_inference_client.generate_text(
+        generate_text_detail)
+    # Print result
+    # print("**************************Generate Texts Result**************************")
+    data = generate_text_response.data
+    text = data.inference_response.generated_texts[0].text
+    return text
